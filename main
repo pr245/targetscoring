@@ -1,480 +1,377 @@
-import cv2
-import numpy as np #import numpy lib and define#
-import datetime
-import tkMessageBox
-import Tkinter, Tkconstants, tkFileDialog
-
-from Tkinter import *
-from PIL import Image
-from PIL import ImageTk
+#################################################
+### Paper Target Scoring System Software
+### P.Rai Third Year Project
+#################################################
+####Importing Python Libraries
+import cv2 # import opencv for image processing functions
+import numpy # import numpy for scientific computing functions
+import datetime # import date and time functions
+import tkMessageBox # import pop up box functions
+import tkFileDialog # import file dialog functions
+from Tkinter import * # import tkinter library
+from PIL import Image # import pillow library classes
+from PIL import ImageTk # import pillow library classes
 from math import hypot # import math function
-from itertools import repeat
-#from tkColorChooser import askcolor
-from skimage.feature import peak_local_max
-from skimage.morphology import watershed
-from scipy import ndimage
-
-root = Tk()
-
-
+from itertools import repeat # repeat function for lists
+from skimage.feature import peak_local_max # importing peak local maxs for use in
+ski-image watershed algorithm
+from skimage.morphology import watershed # importing ski-image watershed algorithm
+from scipy import ndi # importing ndimage for use in ski-image watershed algorithm
+root = Tk() # initializes the interpreter and create the root window for GUI
+####Initalising Lists for storing Shot and Bulls eye Coordinates and Calculations
 Old = []
 counter_list = []
 new_list009 = []
 K = []
-G = []
-L = []
+Bullseye_List = []
+bullethole_coord_list = []
 P = []
 Selected = []
-
-
-
-
-
 def distanceCal(w, h):
-   if w and h > 500:
-       return 4
-   else:
-       return 2
-
-def distance(p1, p2):
-"""Euclidean distance between two points."""
-x1, y1 = p1
-x2, y2 = p2
-return hypot(x2 - x1, y2 - y1)
-
-def imageFrame(img):
-
-   global panelC
-
-   if panelC is None:
-       # the first panel will store our original image
-       panelC = Label(image=img)
-       panelC.image = img
-       panelC.grid(row=1, column=3)
-   else:
-       # update the pannels
-       panelC.configure(image=img)
-       panelC.image = img
-
-def imageFrame2(img):
-
-   global panelB
-
-   if panelB is None:
-
-       panelB = Label(image=img)
-       panelB.image = img
-       panelB.grid(row=1, column=4)
-       return img
-
-   else:
-
-       panelB.configure(image=img)
-       panelB.image = img
-       return img
-
-def totalshots(shots):
-
-   global label5
-
-   if label5 is None:
-       label5 = Label(root, text=shots)
-       label5.text = shots
-       label5.grid(row=0, column=4)
-
-   else:
-
-       label5.configure(text=shots)
-       label5.text = shots
-
-def shotscores(shot):
-
-   global label7
-
-   if label7 is None:
-       label7 = Label(root, text=shot)
-       label7.text = shot
-       label7.grid(row=1, column=0)
-
-   else:
-
-       label7.configure(text=shot)
-       label7.text = shot
-
-def filename(name):
-
-   global label4
-
-   if label4 is None:
-       label4 = Label(root, text=name)
-       label4.text = name
-       label4.grid(row=0, column=3)
-
-   else:
-
-       label4.configure(text=name)
-       label4.text = name
-
-
-def addShot():
-   def draw_circle(event, x, y, flags, param):
-       global mouseX
-       if event == cv2.EVENT_LBUTTONDBLCLK:
-           cv2.circle(image0, (x, y), 5, (255, 255, 0), 1)
-           mouseX = (x,y)
-           center875 = (float(x), float(y))
-           L.append(center875)
-
-   path2 = str(Selected[-1])
-   image0 = cv2.imread(path2)
-   cv2.namedWindow('image')
-   cv2.setMouseCallback('image', draw_circle)
-   while (1):
-       cv2.imshow('image', image0)
-       k = cv2.waitKey(20) & 0xFF
-       if k == 27:
-           break
-       elif k == ord('a'):
-           print mouseX
-
-def on_click(img, event):
-   if event is None:
-       pass
-
-   else:
-       saveLocation = tkFileDialog.asksaveasfilename(initialdir = "/", defaultextension = ".png", title = "Select Save Location",filetypes = (("jpeg files","*.jpg"),("png files","*.png"),("all files","*.*")))
-       cv2.imwrite(str(saveLocation), img)
-
-
-
-
-
-
-
-def display():
-
-   del counter_list[:]
-   del K[:]
-   del L[:]
-   del P[:]
-   del G[:]
-
-
-   path = tkFileDialog.askopenfilename(initialdir = str(Old), title = "Select Targe Image File")
-   Old.append(path)
-   image0 = cv2.imread(path)
-
-   imageFrame2("")
-   totalshots("")
-   shotscores("")
-   filename("")
-
-   Selected.append(path)
-
-   image00 = cv2.cvtColor(image0, cv2.COLOR_BGR2RGB)
-
-   image2 = Image.fromarray(image00)
-
-   image5 = ImageTk.PhotoImage(image2)
-
-   filename("Loaded Target Image File:" + "\n" + str(Selected[-1]))
-
-   imageFrame(image5)
-
-def emptyLists():
-   del counter_list[:]
-   del K[:]
-   del L[:]
-   del P[:]
-   del G[:]
-
-
-def select_image():
-  emptyLists()
-  now = datetime.datetime.now()
-  # grab a reference to the image panels
-  global panelB
-  # open a file chooser dialog and allow the user to select an input
-  # image
-  #path2 = str(Selected[-1])
-  if len(Selected) is 0:
-      tkMessageBox.showinfo("Error", "Please select target image first!")
-  else:
-       path2 = str(Selected[-1])
-
-  # ensure a file path was selected
-  if len(path2) > 0:
-      # load the image from disk, convert it to grayscale, and detect
-      # edges in it
-
-      image9 = cv2.imread(path2)
-
-
-      height, width, channels = image9.shape
-      dis = distanceCal(width, height)
-
-      print height, width, channels
-
-
-      image1 = cv2.cvtColor(image9, cv2.COLOR_BGR2RGB)
-
-      image = cv2.GaussianBlur(image1, (5, 5), 0)
-
-      shifted = cv2.pyrMeanShiftFiltering(image, 10, 21)
-
-      gray = cv2.cvtColor(shifted, cv2.COLOR_BGR2GRAY)
-
-      # OpenCV represents images in BGR order; however PIL represents
-      # images in RGB order, so we need to swap the channels
-      #image2 = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-
-
-      #lower_bound = np.array(colorcode())
-      #upper_bound = np.array(colorcode2())
-
-      lower_bound = np.array([220, 220, 220])
-      upper_bound = np.array([255, 255, 255])
-
-      mask12 = cv2.inRange(image, lower_bound, upper_bound)
-
-      #cv2.imshow('Objects Detected', mask12)
-      #cv2.waitKey(0)
-
-      #kernel = np.ones((5, 5), np.uint8)
-      #mask1 = cv2.morphologyEx(mask12, cv2.MORPH_OPEN, kernel)
-
-      #cv2.imshow('Objects Detected', mask1)
-      #cv2.waitKey(0)
-
-
-
-      _, contours, _ = cv2.findContours(mask12.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-
-      im_in = cv2.imread(path2, cv2.IMREAD_GRAYSCALE);
-
-      # Threshold.
-      # Set values equal to or above 220 to 0.
-      # Set values below 220 to 255.
-
-      th, im_th = cv2.threshold(im_in, 120, 255, cv2.THRESH_BINARY_INV);
-
-      #cv2.imshow('Objects Detected', im_th)
-      cv2.waitKey(0)
-
-      # Copy the thresholded image.
-      im_floodfill = im_th.copy()
-
-      # Mask used to flood filling.
-      # Notice the size needs to be 2 pixels than the image.
-      h, w = im_th.shape[:2]
-      mask = np.zeros((h + 2, w + 2), np.uint8)
-
-      # Floodfill from point (0, 0)
-      cv2.floodFill(im_floodfill, mask, (0, 0), 255);
-
-      # Invert floodfilled image
-      im_floodfill_inv = cv2.bitwise_not(im_floodfill)
-
-      # Combine the two images to get the foreground.
-      im_out = im_th | im_floodfill_inv
-
-      kernel = np.ones((9, 9), np.uint8)
-      opening = cv2.morphologyEx(im_out, cv2.MORPH_OPEN, kernel)
-
-
-
-      _, contours1, _ = cv2.findContours(opening, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-      for contour2 in contours1:
-
-          if len(contours1) > 0:
-              # find largest contour in mask, use to compute minEnCircle
-              c = max(contours1, key=cv2.contourArea)
-              (x, y), radius222 = cv2.minEnclosingCircle(c)
-              center22 = (float(x), float(y))
-              radius22 = float(radius222)
-              radius224 = int(radius222)
-              G.append(center22)
-              pxtorad = int((int(radius224) / 13.1))
-              pxtocm = 5.9 / (float(radius22))
-              print ("borderspace")
-              print(pxtorad)
-
-
-
-      D = ndimage.distance_transform_edt(mask12)
-      localMax = peak_local_max(D, indices=False, min_distance=dis, labels=mask12)
-
-
-
-      # perform a connected component analysis on the local peaks,
-      # using 8-connectivity, then appy the Watershed algorithm
-      markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
-      labels = watershed(-D, markers, mask=mask12)
-      print(" {} Bullet Holes Found".format(len(np.unique(labels)) - 1))
-      totalshots("Scored Target \n {} Bullet Holes Detected".format(len(np.unique(labels)) - 1))
-      #label5 = Label(root, text="Scored Target \n {} Bullet Holes Detected".format(len(np.unique(labels)) - 1))
-      #label5.grid(row=0, column=4)
-
-      # loop over the unique labels returned by the Watershed
-      # algorithm
-      for label in np.unique(labels):
-          # if the label is zero, we are examining the 'background'
-          # so simply ignore it
-          if label == 0:
-              continue
-
-          # otherwise, allocate memory for the label region and draw
-          # it on the mask
-          mask = np.zeros(gray.shape, dtype="uint8")
-          mask[labels == label] = 255
-
-          # detect contours in the mask and grab the largest one
-          cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-          c = max(cnts, key=cv2.contourArea)
-
-          # draw a circle enclosing the object
-          ((x, y), r) = cv2.minEnclosingCircle(c)
-
-          center = (float(x), float(y))
-          radius = float(r)
-          L.append(center)
-          for i in range(len(L)):
-               print(L[i])
-
-          K = []
-          K.append(radius)
-          print(K)
-
-          # for i in range(len(K)):
-          # print(K[i])
-
-
-
-          edistance = [distance(*pair) for pair in zip(repeat(G[0]), L[0:int((len(np.unique(labels)) - 1))])]
-          P.append(edistance)
-            # print ("performing e distance ")
-            # for i in range(len(edistance)):
-            # print(edistance[i])
-          newList1 = [x for x in edistance]
-            # print ("resort edistance to list ")
-            # print(newList1)
-
-          newlist2 = [x * pxtocm for x in newList1]
-            # print ("conver to cm ")
-            # print(newlist2)
-          newList3 = [x / 2 for x in newlist2]
-            # print ("half ")
-            # print(newList3)
-          newList4 = [x / 0.79 for x in newList3]
-            # print ("dividing by border distance ")
-            # print(newList4)
-          newList5 = [11 - x for x in newList4]
-            # print ("subtacting the no of scoring rings ")
-            # print(newList5)
-            # print ("if a answer is negative, set it to 0 ")
-          list6 = [0 if i < 0 else i for i in newList5]
-            # print(list6)
-          newList55 = [x + 0 for x in list6]
-            #print ("subtacting the no of scoring rings ")
-          print(newList55)
-          print ("Final score(s)")
-          new_list111 = map(int, newList55)
-          print(new_list111)
-          #label1.configure(text="\n".join(map(str, new_list111)))
-          for x in range(len(new_list111)):
-               print(new_list111[x])
-          counter_list = list(enumerate(new_list111, 1))
-           #print(counter_list)
-          ((x, y), r) = cv2.minEnclosingCircle(c)
-          cv2.circle(image1, (int(x), int(y)), int(pxtorad), (0, 0, 255), -1)
-          shottextsize = float(pxtorad * 0.1)
-          cv2.putText(image1, "{}".format(new_list111[-1]), (int(x) - 5, int(y) + 5),cv2.FONT_HERSHEY_SIMPLEX, shottextsize, (0, 255, 0), 2)
-          pos = (int(height * 0.55), int(height * 0.96))
-          textsize = float(pxtorad * 0.1)
-          cv2.putText(image1, "".join(now.strftime("%Y-%m-%d %H:%M")), pos, cv2.FONT_HERSHEY_SIMPLEX, textsize,(0, 0, 255), 2)
-          SumB = sum(new_list111)
-          shotscores("(Shot No, Score)" + "\n" + "\n".join(map(str, counter_list)) + "\n" + "Total Score: " + str(SumB))
-           #for a, b in enumerate(new_list111, 1):
-           #print 'Shot No {}: {} Points'.format(a, b)
-
-      global image0024
-
-      image0024 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
-
-
-
-
-      # convert the images to PIL format...
-
-      image11 = Image.fromarray(image1)
-
-      # ...and then to ImageTk format
-      #image2 = ImageTk.PhotoImage(image2)
-      image44 = ImageTk.PhotoImage(image11)
-
-      imageFrame2(image44)
-
-
-
-# initialize the window toolkit along with the two image panels
-
+if w and h > 450:
+return 4
+else:
+return 2
+def distance(points1, points2): # user defined function for distance between two
+coordinates
+xcoordinate_1, ycoordinate_1 = points1
+xcoordinate_2, ycoordinate_2 = points2
+return hypot(xcoordinate_2 - xcoordinate_1,
+ycoordinate_2 - ycoordinate_1) # return distance between two
+coordinates
+def imageFrame(img): # user defined function displaying selected un-scored image in
+gui
+70
+global Image_Panel1 # declare global varible for image panel
+if Image_Panel1 == None: # if the image panels are empty, initialize them and
+store the image of the unscored target
+Image_Panel1 = Label(image=img)
+Image_Panel1.image = img
+Image_Panel1.grid(row=1, column=3) # place it at grid layout in the gui
+else:
+Image_Panel1.configure(
+image=img) # if the image panels not empty, update the image to whatever
+new image is selected
+Image_Panel1.image = img
+def imageFrame2(img): # user defined function displaying selected un-scored image in
+gui
+global Image_Panel2 # declare global varible for image panel
+if Image_Panel2 == None: # if the image panels are empty, initialize them and
+store the image of the scored target
+Image_Panel2 = Label(image=img)
+Image_Panel2.image = img
+Image_Panel2.grid(row=1, column=4) # place it at grid layout in the gui
+else:
+Image_Panel2.configure(
+image=img) # if the image panels not empty, update the image to whatever
+new image is scored as
+Image_Panel2.image = img
+def totalshots(shots): # user defined function displaying number of holes detected in
+the gui
+global label5 # declare global varible for label
+if label5 == None: # if the text labels are empty, initialize them and store the
+text of the hole count
+label5 = Label(root, text=shots)
+label5.text = shots
+label5.grid(row=0, column=4) # place it at grid layout in the gui
+else:
+label5.configure(text=shots) # if the text label is not empty, update the
+text to whatever new hole count is
+label5.text = shots
+def shotscores(shot): # user defined function displaying invidual shot score and
+total score within the gui
+global label7 # declare global varible for text label
+if label7 == None: # if the text labels are empty, initialize them and store the
+text of target scores
+label7 = Label(root, text=shot)
+label7.text = shot
+label7.grid(row=1, column=0) # place it at grid layout in the gui
+else:
+label7.configure(text=shot) # if the text label is not empty, update the text
+to whatever new target score is
+label7.text = shot
+71
+def filename(name): # user defined function displaying selected target file name text
+global label4 # declare global varible for text label
+if label4 == None: # if the text labels are empty, initialize them and store the
+text of selected target file name text
+label4 = Label(root, text=name)
+label4.text = name
+label4.grid(row=0, column=3) # place it at grid layout in the gui
+else:
+label4.configure(text=name) # if the text label is not empty, update the text
+to new selected target file name
+label4.text = name
+def save_image(img, event): # user defined function saving scored image files as a
+seperate image file
+if event is None: # if event is null
+pass # do nothing
+else: # else create a string based on the save directory set by the tkinter file
+dialog
+saveLocation = tkFileDialog.asksaveasfilename(initialdir="/",
+defaultextension=".png",
+title="Select Save Location",
+filetypes=(
+("jpeg files", "*.jpg"), ("png files", "*.png"), ("all files",
+"*.*")))
+cv2.imwrite(str(saveLocation), img) # save the image at the selected save
+location
+def display(): ## displaying selected image function
+# clear lists of values incase they have anything left over
+del counter_list[:]
+del K[:]
+del bullethole_coord_list[:]
+del P[:]
+del Bullseye_List[:]
+path = tkFileDialog.askopenfilename(initialdir=str(Old),
+title="Select Targe Image File") # set a
+string varible to whatever filename is selected by user
+Old.append(path) # store string name in list
+image0 = cv2.imread(path) # read selected image path through opencv
+##clear text labels and image frames
+imageFrame2("")
+totalshots("")
+shotscores("")
+filename("")
+Selected.append(path) # store image file path string in list
+image00 = cv2.cvtColor(image0, cv2.COLOR_BGR2RGB) # convert selected image from
+BGR TO RGB format
+image2 = Image.fromarray(image00) # use pillow to remember this image object
+image5 = ImageTk.PhotoImage(image2) # convert to format that tkinter can view
+72
+filename("Loaded Target Image File:" + "\n" + str(Selected[-1])) # displaying
+selected image file name in gui
+imageFrame(image5) # displaying selected image file in gui
+def emptyLists(): # user defined function for clearing data out of lists
+del counter_list[:]
+del K[:]
+del bullethole_coord_list[:]
+del P[:]
+del Bullseye_List[:]
+def select_score_image(): # main function for scoring
+emptyLists() # empty lists incases there are traces of data left
+now = datetime.datetime.now() # get current time and assign it to now
+global panelB # declare global varible for image panel
+if len(Selected) is 0: # if selected image is not selected before scoring an
+image
+tkMessageBox.showinfo("Error", "Please select target image first!") # dispaly
+this error message
+else: # otherwise
+Image_path = str(Selected[-1]) # assign the image path to the last selected
+image file from list
+if len(Image_path) > 0: # if image file was selected
+Loaded_Image = cv2.imread(Image_path) # have opencv read the selected image
+file
+height, width, channels = Loaded_Image.shape
+dis = distanceCal(width, height)
+print height, width, channels
+#################################################
+### Image Processing
+#################################################
+Target_image = cv2.cvtColor(Loaded_Image,
+cv2.COLOR_BGR2RGB) # convert opencv's old BGR
+format to a RGB color space format (Bullet Segmenting)
+blurred_image = cv2.GaussianBlur(Target_image, (5, 5),
+0) # add a guassian low pass filter to
+remove noise before thresholding (Bullet Segmenting)
+gray = cv2.cvtColor(blurred_image,
+cv2.COLOR_BGR2GRAY) # grayscale the image before
+thresholding (Bullseye Segmenting)
+# threshold the colour white with the defined RGB color space (Bullet
+Segmenting)
+lower_bound_white = numpy.array([200, 200, 200]) # Lower RGB space range
+limits of white (Bullet Segmenting)
+upper_bound_white = numpy.array([255, 255, 255]) # Upper RGB space range
+limits of white (Bullet Segmenting)
+73
+Bullethole_Mask = cv2.inRange(blurred_image, lower_bound_white,
+upper_bound_white) # threshold the colour white
+between the RGB color space range (Bullet Segmenting)
+cv2.imshow('Bullet Holes Found', Bullethole_Mask) # Show user the Bullet Hole
+mask results (Bullet Segmenting)
+cv2.waitKey(0) # display until a button is pressed
+contours = cv2.findContours(Bullethole_Mask.copy(), cv2.RETR_TREE,
+cv2.CHAIN_APPROX_NONE)[
+1] # Find all detected contours in bullet hole mask,
+Bullseye = cv2.imread(Image_path,
+cv2.IMREAD_GRAYSCALE); # grayscale the image before
+thresholding (Bullseye Segmenting)
+cv2.imshow('greyscale', Bullseye) # Show user the resulting grayscale
+cv2.waitKey(0) # display until a button is pressed
+threshold_Bullseye = cv2.threshold(Bullseye, 120, 255, cv2.THRESH_BINARY_INV)[
+1]; # perform a inverted threshold at the limit of 120,foreground objects
+are white, background is black
+threshold_Bullseye_copy = threshold_Bullseye.copy() # make a new copy of the
+threshold_Bullseye
+cv2.floodFill(threshold_Bullseye_copy, mask, (0, 0), 255); # Perform flood
+fill around the bullseye
+threshold_Bullseye_copy_inverted = cv2.bitwise_not(threshold_Bullseye_copy) #
+inverted flooded bullseye
+bullseye_cleared = threshold_Bullseye | threshold_Bullseye_copy_inverted #
+merged two images to get bullseye free of shot holes
+opening_kernel = numpy.ones((9, 9),
+numpy.uint8) # define a kernel size of 9 x 9
+consisting of 1's for opening operations
+morph_opening = cv2.morphologyEx(bullseye_cleared, cv2.MORPH_OPEN,
+opening_kernel) # perform opening on the
+cleared bulls eye to clear small traces of noise
+_, bullseye_contour, _ = cv2.findContours(morph_opening, cv2.RETR_TREE,
+cv2.CHAIN_APPROX_SIMPLE) # use
+opencv to detect contours in the bullseye mask
+for bullseye_c in bullseye_contour: # loop over found contours
+if len(bullseye_contour) > 0: # if at least one contour is found
+biggest_contour = max(bullseye_contour,
+key=cv2.contourArea) # detect largest contour
+in mask via contour area (which is the bullseye)
+(x0, y0), diameter0 = cv2.minEnclosingCircle(
+biggest_contour) # enclose the bullseye in a min enclosing
+circle, retrieve bullseye coordinates and diameter
+bullseye_coord = (int(x0), int(y0)) # pack x0 and y0 into a
+coordinate
+bullseye_diameter = float(diameter0) # change diameter into a float
+radius224 = int(radius222) # bullet sizing conversion
+Bullseye_List.append(bullseye_coord) # score bullseye cooridnate into
+list
+74
+pxtorad = int((int(radius224) / 13.1)) # bullet sizing conversion
+scaling = 5.9 / (float(
+bullseye_diameter)) # scaling distance using bullet diameter as
+diameter reference to phyiscal diameter (cm)
+print ("borderspace") # prints to view if everything is working
+print(scaling)
+#################################################
+### Skit-Image watershed algorithm
+#################################################
+# Seperation for any over lapping bullet holes
+Distance_tranform = ndi.distance_transform_edt(
+Bullethole_Mask) # Performing Distance transform within bullet hole mask
+(bullet hole segmentation)
+local_maxima = peak_local_max(Distance_tranform, min_distance=dis,
+labels=Bullethole_Mask) # Performing Distance
+transform within bullet hole mask (bullet hole segmentation)
+segment_markers = ndi.label(local_maxima)[0] # chose local_maxima as
+watershed markers
+watershed_labels = watershed(-Distance_tranform, segment_markers,
+mask=Bullethole_Mask) # locate the watershed
+basins within the flooded image from segment_markers
+totalshots("Scored Target \n {} Bullet Holes Detected".format(
+len(numpy.unique(watershed_labels)) - 1)) # display the number of bullet
+holes found in gui
+# label5 = Label(root, text="Scored Target \n {} Bullet Holes
+Detected".format(len(numpy.unique(watershed_labels)) - 1))
+# label5.grid(row=0, column=4)
+# loop over the bullet holes seperated by watershed
+for seperated_shots in numpy.unique(labels):
+# detect seperated shots in the mask
+detected_seperated_shots = \
+cv2.findContours(seperated_shots.copy(), cv2.RETR_EXTERNAL,
+cv2.CHAIN_APPROX_SIMPLE)[-2]
+contour_moments = detected_seperated_shots[0] # start from the first
+contour (bullet hole) found
+Moments = cv2.moments(contour_moments) # compute moments using the
+function
+# Centroid is given by the relations
+x1 = int(Moments['m10'] / Moments['m00'])
+y1 = int(Moments['m01'] / Moments['m00'])
+bullethole_coord = (float(x1), float(y1)) # pack x1 and y1 into a coordinate
+bullethole_coord_list.append(bullethole_coord) # store bullet hole coordinates
+into list
+for i in range(len(bullethole_coord_list)):
+print(bullethole_coord_list[i])
+K = [] # unused
+K.append(radius) # unused
+print(K) # unused
+75
+# for i in range(len(K)): #unused
+# print(K[i]) #unused
+#################################################
+### Scoring Algorithm (python list comprehension)
+#################################################
+edistance = [distance(*pair) for pair in zip(repeat(Bullseye_List[0]),
+bullethole_coord_list[0:int(
+(len(numpy.unique(labels)) - 1))])] # perform the euclidean distance between
+the bullseye list and shot list
+P.append(edistance) # unused
+# print ("performing e distance ")
+# for i in range(len(edistance)):
+# print(edistance[i])
+newList1 = [x for x in edistance] # rearrange the layout
+# print ("resort edistance to list ")
+# print(newList1)
+newlist2 = [x * scaling for x in newList1] # perform the pixel to cm scaling on
+the the euclidean distances
+# print ("conver to cm ")
+# print(newlist2)
+newList4 = [x / 0.79 for x in newList2] # divide by the border spacing between
+two rings (10 meter ISSF)
+# print ("dividing by border distance ")
+# print(newList4)
+newList5 = [11 - x for x in newList4] # subtract by the border spacing between
+two rings (10 meter ISSF pistol)
+# print ("subtacting the no of scoring rings ")
+# print(newList5)
+# print ("if a answer is negative, set it to 0 ")
+list6 = [0 if i < 0 else i for i in newList5] # if the scores are negative set it
+to zero (as they are misses)
+newList55 = [x + 0 for x in list6] # unused
+print(newList55)
+print ("Final score(s)") # final scores
+final_scores = map(int, newList55)
+print(final_scores)
+# label1.configure(text="\n".join(map(str,final_scores)))
+for x in range(len(final_scores)):
+print(final_scores[x])
+counter_list = list(enumerate(final_scores, 1))
+# print(counter_list)
+((x1, y1), r) = cv2.minEnclosingCircle(etected_seperated_shots)
+set = (int(x1), int(y1))
+print(set)
+#################################################
+### marking and labing shot holes with scores on target image
+#################################################
+cv2.circle(Target_image, set, int(pxtorad), (0, 0, 255), -1)
+shottextsize = float(pxtorad * 0.1)
+cv2.putText(Target_image, "{}".format(final_scores[-1]), (int(x1) - 5, int(y1) +
+5), cv2.FONT_HERSHEY_SIMPLEX,
+shottextsize, (0, 255, 0), 2)
+pos = (int(height * 0.55), int(height * 0.96))
+textsize = float(pxtorad * 0.1)
+cv2.putText(Target_image, "".join(now.strftime("%Y-%m-%d %H:%M")), pos,
+cv2.FONT_HERSHEY_SIMPLEX, textsize,
+(0, 0, 255), 2)
+76
+SumB = sum(final_scores)
+shotscores("(Shot No, Score)" + "\n" + "\n".join(map(str, counter_list)) + "\n" +
+"Total Score: " + str(SumB))
+global image0024 # initialize image frame for scored target image
+image0024 = cv2.cvtColor(Target_image, cv2.COLOR_BGR2RGB) # convert scored target
+image to RGB
+image11 = Image.fromarray(Target_image) # use pillow to remember this image object
+image44 = ImageTk.PhotoImage(image11) # displaying selected image file name in gui
+imageFrame2(image44) # display scored_image in gui
+# initialize image and text panels as being empty in window when the program is opened
 inputfile = None
-panelB = None
-panelC = None
+Image_Panel1 = None
+Image_Panel2 = None
 label5 = None
 label7 = None
 label4 = None
-
-
-
-
-          # create a button, then when pressed, will trigger a file chooser
-          # dialog and allow the user to select an input image; then add the
-          # button the GUI
-#btn = Button(root, text=" Select Target Image ", command=display)
-#btn.grid(row=0, column=0)
-
-#btn2 = Button(root, text="       Score Target       ", command=select_image)
-#btn2.grid(row=6, column=0)
-
-menubar = Menu(root)
-
-# create a pulldown menu, and add it to the menu bar
-filemenu = Menu(menubar, tearoff=0)
-filemenu.add_command(label="Open", command=display)
-filemenu.add_command(label="Save", command= lambda: on_click(image0024, 1))
-filemenu.add_separator()
-filemenu.add_command(label="Exit", command=root.quit)
-menubar.add_cascade(label="File", menu=filemenu)
-
-# create more pulldown menus
-editmenu = Menu(menubar, tearoff=0)
-editmenu.add_command(label="Score 10m Air Pistol", command=select_image)
-editmenu.add_command(label="Score 10m Air Rifle", command=select_image)
-editmenu.add_command(label="Add Shots", command=addShot)
-editmenu.add_command(label="Remove Shots", command="")
-menubar.add_cascade(label="Target", menu=editmenu)
-
-helpmenu = Menu(menubar, tearoff=0)
-helpmenu.add_command(label="About", command="")
-menubar.add_cascade(label="Help", menu=helpmenu)
-
-# display the menu
-root.config(menu=menubar)
-
-
-#btn2 = Button(root, text="Rotate Image 90 Deg", command=rotate_image)
-#btn2.grid(row=7, column=0)
-
-#label1 = Label(root)
-#label1.grid(row=1, column=0)
-
-root.config(menu=menubar)
+menu_buttons = Menu(root) # attach menu bar widget to root gui
+# creating further dropdown buttons in the menu_buttons
+scoremenu = Menu(menu_buttons, tearoff=0)
+scoremenu.add_command(label="Open", command=display) # select image button
+scoremenu.add_command(label="Save", command=lambda: save_image(image0024, 1)) # save
+image button
+scoremenu.add_separator()
+scoremenu.add_command(label="Exit", command=root.quit) # quit image button
+menu_buttons.add_cascade(label="File", menu=scoremenu)
+# creating another set of dropdown buttons in the menu_buttons
+scoremenu = Menu(menu_buttons, tearoff=0)
+scoremenu.add_command(label="Score 10m Air Pistol", command=select_score_image) #
+score image button
+menu_buttons.add_cascade(label="Target", menu=scoremenu)
+root.config(menu=menu_buttons) # configuring the menu bar to be displayed
+root.config(menu=menu_buttons)
 root.title("Paper Target Scoring - Third Year Project - P.Rai")
-# kick off the GUI
 root.iconbitmap('bullseye-target-center-shooting-aim-goal-shoot-ico.ico')
 root.mainloop()
-
-
